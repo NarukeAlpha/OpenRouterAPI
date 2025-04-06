@@ -1,0 +1,9 @@
+## OpenRouterAPI
+
+### Unofficial api for OpenRouter
+
+Made this after i found other packages simply too bloated. 
+You should have absolute control of the request in the simplest way possible.
+
+This codebase respects its user.
+
