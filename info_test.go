@@ -11,7 +11,7 @@ func TestGetCredits(t *testing.T) {
 		t.Skip("OPENROUTER_API_KEY not set")
 	}
 	c := GetCredits(key)
-	if c < 0 {
+	if c.Data.TotalCredits <= 0 {
 		t.Error("GetCredits failed")
 	}
 	t.Log(c)

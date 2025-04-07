@@ -15,12 +15,12 @@ type Data struct {
 	TotalUsage   float64 `json:"total_usage"`
 }
 
-func GetCredits(key string) float64 {
+func GetCredits(key string) Balance {
 	var balance Balance
 	var c http.Client
 	u, err := url.Parse("https://openrouter.ai/api/v1/credits")
 	if err != nil {
-		return -3
+		return Balance{}
 	}
 	auth := "Bearer " + key
 	r := http.Request{
@@ -32,17 +32,17 @@ func GetCredits(key string) float64 {
 	}
 	resp, err := c.Do(&r)
 	if err != nil {
-		return -4
+		return Balance{}
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return -5
+		return Balance{}
 	}
 
 	err = json.Unmarshal(body, &balance)
 	if err != nil {
-		return -6
+		return Balance{}
 	}
 
-	return balance.Data.TotalUsage
+	return balance
 }
