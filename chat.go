@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/url"
 )
@@ -11,6 +12,10 @@ import (
 func orint(i int) *int           { return &i }
 func orfloat(i float64) *float64 { return &i }
 func orbool(b bool) *bool        { return &b }
+func orrole(r Role) string {
+	s := string(r)
+	return s
+}
 
 type Role string
 
@@ -85,7 +90,8 @@ func Generate(key string, data ChatRequest) (ChatResponse, error) {
 		return response, errors.Join(err, errors.New("failed to create request"))
 	}
 	r.Header.Set("Content-Type", "application/json")
-	r.Header.Set("Authorization", key)
+	auth := "Bearer " + key
+	r.Header.Set("Authorization", auth)
 
 	c := &http.Client{}
 	resp, err := c.Do(r)
@@ -93,8 +99,12 @@ func Generate(key string, data ChatRequest) (ChatResponse, error) {
 		return response, errors.Join(err, errors.New("failed to make request for chat gen"))
 	}
 	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return response, err
+	}
 
-	err = json.NewDecoder(resp.Body).Decode(&response)
+	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return response, errors.Join(err, errors.New("failed to decode response for chat gen"))
 	}

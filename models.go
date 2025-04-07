@@ -2,6 +2,7 @@ package OpenRouterAPI
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 )
 
@@ -37,30 +38,44 @@ type TopProvider struct {
 }
 
 type Pricing struct {
-	Prompt            string `json:"prompt"`
-	Completion        string `json:"completion"`
-	Image             string `json:"image"`
-	Request           string `json:"request"`
-	InputCacheRead    string `json:"input_cache_read,omitempty"`
-	InputCacheWrite   string `json:"input_cache_write,omitempty"`
-	WebSearch         string `json:"web_search,omitempty"`
-	InternalReasoning string `json:"internal_reasoning,omitempty"`
+	Prompt            string  `json:"prompt"`
+	Completion        string  `json:"completion"`
+	Image             string  `json:"image"`
+	Request           string  `json:"request"`
+	InputCacheRead    string  `json:"input_cache_read,omitempty"`
+	InputCacheWrite   string  `json:"input_cache_write,omitempty"`
+	WebSearch         string  `json:"web_search,omitempty"`
+	InternalReasoning string  `json:"internal_reasoning,omitempty"`
+	Discount          float64 `json:"discount"`
 }
 
 type PerRequestLimits struct {
 	Key string `json:"key"`
 }
 
-type Endpoint struct {
+type Endpoints struct {
 	Name                string   `json:"name"`
-	ContextLength       float64  `json:"context_length"`
+	ContextLength       int      `json:"context_length"`
 	Pricing             Pricing  `json:"pricing"`
 	ProviderName        string   `json:"provider_name"`
+	Quantization        string   `json:"quantization"`
+	MaxCompletionTokens *int     `json:"max_completion_tokens"`
+	MaxPromptTokens     *int     `json:"max_prompt_tokens"`
 	SupportedParameters []string `json:"supported_parameters"`
+	Status              int      `json:"status"`
+}
+
+type Endpoint struct {
+	ID           string       `json:"id"`
+	Name         string       `json:"name"`
+	Created      float64      `json:"created"`
+	Description  string       `json:"description"`
+	Architecture Architecture `json:"architecture"`
+	Endpoints    []Endpoints  `json:"endpoints"`
 }
 
 type EndpointList struct {
-	Data []Endpoint `json:"data"`
+	Data Endpoint `json:"data"`
 }
 
 func GetModelsAvail() ModelList {
@@ -77,17 +92,34 @@ func GetModelsAvail() ModelList {
 	return list
 }
 
-func GetModelEndpoints(author, model string) EndpointList {
+func GetModelEndpoints(author string, model string) (EndpointList, error) {
 	var list EndpointList
-	u := "https://openrouter.ai/api/v1/models/" + author + "/" + model + "/endpoints"
-	resp, err := http.Get(u)
+	url := "https://openrouter.ai/api/v1/models/" + author + "/" + model + "/endpoints"
+
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return list
+		return list, err
+	}
+
+	req.Header.Set("User-Agent", "curl/7.79.1")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return list, err
 	}
 	defer resp.Body.Close()
-	err = json.NewDecoder(resp.Body).Decode(&list)
+
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return list
+		return list, err
 	}
-	return list
+
+	err = json.Unmarshal(body, &list)
+	if err != nil {
+		return list, err
+	}
+
+	return list, nil
 }
